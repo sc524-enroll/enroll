@@ -1,7 +1,6 @@
 import {
   Document, Packer, Paragraph, TextRun, ImageRun,
   AlignmentType, BorderStyle, Footer,
-  PageNumberElement, TabStopType, TabStopPosition,
 } from 'docx'
 
 export const config = {
@@ -24,31 +23,23 @@ export default async function handler(req, res) {
   }
 
   try {
-    // ── 將文案依空行分段 ──
     const paragraphs = content
       .split(/\n\n+/)
       .map(p => p.trim())
       .filter(Boolean)
 
-    // ── 頁尾 ──
     const footerPara = new Paragraph({
-      tabStops: [{ type: TabStopType.RIGHT, position: TabStopPosition.MAX }],
       border: { top: { style: BorderStyle.SINGLE, size: 4, color: 'cccccc', space: 6 } },
       children: [
         new TextRun({
           text: `姓名：${studentName || ''}　｜　就讀學校：${schoolName || ''}　｜　社團類型：${clubType || ''}　｜　職務：${position || ''}`,
           font: '標楷體', size: 18, color: '888888',
         }),
-        new TextRun({ text: '\t第 ', font: '標楷體', size: 18, color: '888888' }),
-        new PageNumberElement(),
-        new TextRun({ text: ' 頁', font: '標楷體', size: 18, color: '888888' }),
       ],
     })
 
-    // ── 文件主體 children ──
     const children = []
 
-    // 主標題
     children.push(
       new Paragraph({
         alignment: AlignmentType.CENTER,
@@ -77,33 +68,35 @@ export default async function handler(req, res) {
       }),
     )
 
-    // 照片（若有提供）
     if (photoBase64 && photoType) {
-      const photoBuffer = Buffer.from(photoBase64, 'base64')
-      const imgType = photoType.includes('png') ? 'png' : 'jpg'
-      children.push(
-        new Paragraph({
-          alignment: AlignmentType.CENTER,
-          spacing: { before: 0, after: 60 },
-          children: [
-            new ImageRun({
-              data: photoBuffer,
-              type: imgType,
-              transformation: { width: 300, height: 400 },
-            }),
-          ],
-        }),
-        new Paragraph({
-          alignment: AlignmentType.CENTER,
-          spacing: { before: 0, after: 400 },
-          children: [
-            new TextRun({ text: '▲ 社團活動照片', font: '標楷體', size: 18, color: '888888', italics: true }),
-          ],
-        }),
-      )
+      try {
+        const photoBuffer = Buffer.from(photoBase64, 'base64')
+        const imgType = photoType.includes('png') ? 'png' : 'jpg'
+        children.push(
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            spacing: { before: 0, after: 60 },
+            children: [
+              new ImageRun({
+                data: photoBuffer,
+                type: imgType,
+                transformation: { width: 300, height: 400 },
+              }),
+            ],
+          }),
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            spacing: { before: 0, after: 400 },
+            children: [
+              new TextRun({ text: '▲ 社團活動照片', font: '標楷體', size: 18, color: '888888', italics: true }),
+            ],
+          }),
+        )
+      } catch (imgErr) {
+        console.warn('照片插入失敗，略過：', imgErr.message)
+      }
     }
 
-    // 段落標題
     children.push(
       new Paragraph({
         spacing: { before: 0, after: 200 },
@@ -114,7 +107,6 @@ export default async function handler(req, res) {
       }),
     )
 
-    // 正文段落
     paragraphs.forEach(text => {
       children.push(
         new Paragraph({
@@ -126,7 +118,6 @@ export default async function handler(req, res) {
       )
     })
 
-    // ── 組裝文件 ──
     const doc = new Document({
       styles: {
         default: {

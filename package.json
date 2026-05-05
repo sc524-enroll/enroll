@@ -1,0 +1,17 @@
+{
+  "name": "cyut-portfolio",
+  "version": "1.0.0",
+  "description": "朝陽科技大學企管系推甄備審資料產生器",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "next": "14.2.3",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "@anthropic-ai/sdk": "^0.20.0",
+    "docx": "^8.5.0"
+  }
+}
